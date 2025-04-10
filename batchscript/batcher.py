@@ -13,31 +13,20 @@ import os, click, shutil
 @click.argument('indir')
 @click.option('-n', '--files-per', type=int, default=6)
 @click.option('-o', '--out-dir', type=str, default='.')
-@click.option('-ow', '--overwrite', type=bool, default=False)
-def cli(indir, files_per, out_dir, overwrite):
+def cli(indir, files_per, out_dir):
     """
     A script to partition a directory of files into many directories with the OG
     files split between them. 
     """
     abs_in = os.path.abspath(indir)
     abs_out = os.path.abspath(out_dir)
-    out_dir_setup(abs_out, overwrite)
+    out_dir_setup(abs_out)
 
-def out_dir_setup(abs_out: str, overwite: bool) -> None:
+def out_dir_setup(abs_out: str) -> None:
     """
-    Ensure the out directory exists, creates it if it doesn't. If the overwrite
-    flag is set, all items in the directory will be emptied before the new .txt
-    files are written.
+    Ensure the out directory exists, creates it if it doesn't.
     """
     if not os.path.isdir(abs_out):
         print(f"Building a directory at {abs_out}")
         os.makedirs(abs_out)
-    elif os.path.isdir(abs_out) and overwite:
-        confirm = input(f"Overwriting {abs_out}\n Correct? [y/n]  ")
-        if confirm == 'y':
-            shutil.rmtree(abs_out)
-            os.mkdir(abs_out)
-
-        return
-
     return
