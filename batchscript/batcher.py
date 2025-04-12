@@ -10,6 +10,7 @@ OSU ROXSI SVS pipeline.
 import os
 import click
 import re
+from tqdm import tqdm
 
 @click.command()
 @click.argument('indir')
@@ -67,16 +68,18 @@ def generate_txt_files(abs_in: str, abs_out: str,
         leftover = num_f % num_batches
         click.echo(f"Batches: {num_batches}; Files Per Batch: {f_per_batch}; Leftover: {leftover}")
 
-        chunk = 1
-        i = 0
-        while i < num_f and chunk <= num_batches:
-            batch_fp = os.path.join(abs_out, f'batch{chunk}.txt')
-            with open(batch_fp, 'a') as f:
-                f.write(f'{files[i]}\n')
+        with tqdm(total=num_f, desc="Batching") as pbar:
+            chunk = 1
+            i = 0
+            while i < num_f and chunk <= num_batches:
+                batch_fp = os.path.join(abs_out, f'batch{chunk}.txt')
+                with open(batch_fp, 'a') as f:
+                    f.write(f'{files[i]}\n')
 
-            i += 1
-            if i == (f_per_batch * chunk):  # Makes a new batch every n files
-                chunk += 1
+                i += 1
+                pbar.update(1)
+                if i == (f_per_batch * chunk):  # Makes a new batch every n files
+                    chunk += 1
 
     elif n_files_per:   # TODO: make this available
         click.echo("Dividing by desired number of files per batch")
