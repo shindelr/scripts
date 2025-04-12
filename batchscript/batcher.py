@@ -21,9 +21,7 @@ import re
               help='Number of batches desired, use this OR -n not both')
 @click.option('-r3', '--roxsi-2023', type=bool, default=False,
               help='Toggle on to accurately sort jpgs from ROXSI 2023')
-@click.option('-i', '--int-sort', type=bool, default=True,
-              help='Sorts files in the directory based on the first integer group in the filename.')
-def cli(indir, n_files_per, out_dir, num_batches, roxsi_2023, int_sort):
+def cli(indir, n_files_per, out_dir, num_batches, roxsi_2023):
     """
     A script to partition a directory of files into many directories with the OG
     files split between them. 
@@ -31,7 +29,12 @@ def cli(indir, n_files_per, out_dir, num_batches, roxsi_2023, int_sort):
     abs_in = os.path.abspath(indir)
     abs_out = os.path.abspath(out_dir)
     out_dir_setup(abs_out)
-    generate_txt_files(abs_in, abs_out, n_files_per, num_batches)
+
+    if roxsi_2023:  # Check on file sort style
+        generate_txt_files(abs_in, abs_out, n_files_per, num_batches, int_sort=False)
+    else:
+        generate_txt_files(abs_in, abs_out, n_files_per, num_batches, int_sort=True)
+
 
 def out_dir_setup(abs_out: str) -> None:
     """
@@ -42,9 +45,11 @@ def out_dir_setup(abs_out: str) -> None:
         os.makedirs(abs_out)
     return
 
+
 def generate_txt_files(abs_in: str, abs_out: str, 
                        n_files_per: int = None,
-                       num_batches: int = None) -> None:
+                       num_batches: int = None,
+                       int_sort: str = True) -> None:
     """
     Generate a number of .txt files based on how many individual files need to
     be parsed and how many files the user wants in each .txt file. Absolute paths
@@ -52,7 +57,8 @@ def generate_txt_files(abs_in: str, abs_out: str,
 
     f-in-txt = f-total // n-files-per 
     """
-    sorted_files = sorted(os.listdir(abs_in), key=int_sort_key)  # TODO make sort dynamic based on flags
+    key = int_sort_key if int_sort else roxsi_2023_sort_key
+    sorted_files = sorted(os.listdir(abs_in), key=key)
     files = [os.path.join(abs_in, f) for f in sorted_files]   # Absolute after sort
     num_f = len(files)
 
@@ -79,7 +85,8 @@ def generate_txt_files(abs_in: str, abs_out: str,
         click.echo("No batch number or file number defined. Aborting!")
     return
 
-def roxsi_2023_sort_key():
+
+def roxsi_2023_sort_key(f: str) -> int | float:
     """
     A sorting key for jpgs from ROXSI 2023. 
     Those files use the convention:
@@ -88,10 +95,13 @@ def roxsi_2023_sort_key():
         A038_C002_1020WJ.015171.jpg
         A038_C002_1020WJ.015172.jpg
     
-    REGEX: r'\.(\d+)(?=\.jpg$)
+    REGEX: r'\.(\d+)(?=\.jpg$)'
 
     Matches on the ".numbers.jpg" group.
     """
+    match = re.search(r'\.(\d+)(?=\.jpg$)', f)
+    return int(match.group(1)) if match else float('inf')
+
 
 def int_sort_key(f: str) -> int | float:
     """
@@ -108,5 +118,4 @@ def int_sort_key(f: str) -> int | float:
     no digits in the filename, it is sorted to the bottom.
     """
     match = re.match(r'\d+', f)
-    print(match)
-    return int(match.group(0)) if match else float('inf')
+    return int(match.group(0)) if match else float('inf')   # Matches on first group
