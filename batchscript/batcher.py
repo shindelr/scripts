@@ -69,7 +69,7 @@ def generate_txt_files(abs_in: str, abs_out: str,
 
         chunk = 1
         i = 0
-        while i < num_f:
+        while i < num_f and chunk <= num_batches:
             batch_fp = os.path.join(abs_out, f'batch{chunk}.txt')
             with open(batch_fp, 'a') as f:
                 f.write(f'{files[i]}\n')
