@@ -1,0 +1,5 @@
+To install on CEOAS servers
+python3 -m pip install --user --force-reinstall .
+
+To upgrade on CEOAS servers
+python3 -m pip install --user --upgrade .
