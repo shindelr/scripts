@@ -6,6 +6,7 @@ setup(
     py_modules=['batcher'],
     install_requires=[
         'Click',
+        'tqdm',
     ],
     entry_points={
         'console_scripts': [
