@@ -66,7 +66,7 @@ def generate_txt_files(abs_in: str, abs_out: str,
     if num_batches:
         f_per_batch = num_f // num_batches
         leftover = num_f % num_batches
-        click.echo(f"Batches: {num_batches}; Files Per Batch: {f_per_batch}; Leftover: {leftover}")
+        click.echo(f"Batches: {num_batches}; Files Per Batch: {f_per_batch}; Leftover: {leftover}; From {num_f} Files")
 
         with tqdm(total=num_f, desc="Batching") as pbar:
             chunk = 1

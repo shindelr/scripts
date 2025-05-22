@@ -9,18 +9,20 @@ import subprocess
 import logging
 from multiprocessing import Pool
 import yaml
+from copy import deepcopy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s -- %(levelname)s -- %(message)s")
 # NPROC = 61  # Num cores - 1 in Monarch?
-NPROC = 4  # Num batches in test
+NPROC = 1  # Num batches in test
 
 def launch_batch(file, args):
-    args.input = file  # Ensure procs each have their own in path
-    args.output = os.path.join(os.path.abspath(args.output), os.path.basename(file))  # Ensure procs each have their own out dir
-    if not os.path.isdir(args.output):
-        os.mkdir(args.output)
-    logging.info(f"Processing {args.input} -- Placing output in {args.output}")
-    run_pipe(args=args)
+    local_args = deepcopy(args)
+    local_args.input = file  # Ensure procs each have their own in path
+    local_args.output = os.path.join(os.path.abspath(local_args.output), os.path.basename(file))  # Ensure procs each have their own out dir
+    if not os.path.isdir(local_args.output):
+        os.mkdir(local_args.output)
+    logging.info(f"Processing {local_args.input} -- Placing output in {local_args.output}")
+    run_pipe(args=local_args)
 
 def batches(abs_batch_dir):
     return [os.path.join(abs_batch_dir, f) for f in os.listdir(abs_batch_dir)]
@@ -36,7 +38,8 @@ def run_pipe(args):
             args.output, 
             args.input, 
             str(args.verbosity)]
-    subprocess.run(cmmd)
+    print(cmmd)
+    subprocess.run(cmmd, check=True)
 
 def get_args():
     output_mat_structure = """
@@ -102,16 +105,12 @@ pass_sizes: [3x2 double]
             except yaml.YAMLError as e:
                 raise e
         # Goes through the config file and checks if arg is already supplied via CL
-        print(config)
         for key in config:
-            print(key)
             if getattr(args, key) is None:
                 attr = config[key]
                 setattr(args, key, attr)
     
     return args
-
-
 
 def main():
     args = get_args()
@@ -119,13 +118,15 @@ def main():
     logging.info(f"Found {len(txt_list)} .txt files\n")
 
     try:
-        assert NPROC == len(txt_list), f"NPROC ({NPROC}) should ideally equal the number batches ({len(txt_list)}) to be processed." 
+        assert NPROC == len(txt_list)
     except:
-        if input("Proceed anyways? [y/n]   ") != 'y':
+        print(f"NPROC ({NPROC}) should ideally equal the number batches ({len(txt_list)}) to be processed.")
+        if input("Proceed anyways? [y/n] ") != 'y':
             return
 
-    with Pool(processes=NPROC) as pool:
-        pool.starmap(launch_batch, [(file, args) for file in txt_list])
+    launch_batch(txt_list[0], args)
+    # with Pool(processes=NPROC) as pool:
+    #     pool.starmap(launch_batch, [(file, args) for file in txt_list])
 
 
 if __name__ == '__main__':
