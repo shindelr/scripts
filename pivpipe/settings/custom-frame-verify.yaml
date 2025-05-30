@@ -1,9 +1,10 @@
 # config.yaml
-N: 2
+N: 3
 crop_factor: "1, 3072, 1, 2048"  # 2023 .mat files are uncropped
 final_win_size: 16
 ol: 0.5
 # Absolute paths
-input: "/home/server/pi/homes/shindelr/2023-test/custom-frame-verify"
-output: "/home/server/pi/homes/shindelr/2023-test/piv-mat-out/custom-frame-verify"
+input: "/home/server/pi/homes/shindelr/2023-test/custom-frame-verify-jpgs"
+output: "/home/server/pi/homes/shindelr/2023-test/piv-mat-out/custom-frame-verify/run6-4procs"
 verbosity: 0
+downsample_factor: 1.0

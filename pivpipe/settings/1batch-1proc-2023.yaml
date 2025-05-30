@@ -7,3 +7,4 @@ ol: 0.5
 input: "/home/server/pi/homes/shindelr/2023-test/batches/"
 output: "/home/server/pi/homes/shindelr/2023-test/piv-mat-out/1proc1batch"
 verbosity: 1
+downsample_factor: 1.0

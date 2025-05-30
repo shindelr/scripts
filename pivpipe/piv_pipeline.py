@@ -4,24 +4,25 @@ A script to run the Julia PIV portion of the pipeline.
 """
 
 import os
-import argparse
 import subprocess
 import logging
 from multiprocessing import Pool
 import yaml
+import click
 from copy import deepcopy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s -- %(levelname)s -- %(message)s")
 # NPROC = 61  # Num cores - 1 in Monarch?
-NPROC = 1  # Num batches in test
+NPROC = 42  # Num batches in big-test-batches
 
 def launch_batch(file, args):
     local_args = deepcopy(args)
-    local_args.input = file  # Ensure procs each have their own in path
-    local_args.output = os.path.join(os.path.abspath(local_args.output), os.path.basename(file))  # Ensure procs each have their own out dir
-    if not os.path.isdir(local_args.output):
-        os.mkdir(local_args.output)
-    logging.info(f"Processing {local_args.input} -- Placing output in {local_args.output}")
+    local_args["input"] = file  # Ensure procs each have their own in path
+    local_args["output"] = os.path.join(os.path.abspath(local_args["output"]), os.path.basename(file))  # Ensure procs each have their own out dir
+    local_args["output"] = local_args["output"].removesuffix(".txt")
+    
+    if not os.path.isdir(local_args["output"]):
+        os.mkdir(local_args["output"])
     run_pipe(args=local_args)
 
 def batches(abs_batch_dir):
@@ -30,91 +31,52 @@ def batches(abs_batch_dir):
 def run_pipe(args):
     # Will probably need to be altered in future versions?
     exec_path = '/home/server/pi/homes/shindelr/Nearshore-PIV/piv_build/bin/PIVPipelineUtility'
-    cmmd = [exec_path,
-            str(args.N),
-            str(args.crop_factor), 
-            str(args.final_win_size), 
-            str(args.ol), 
-            args.output, 
-            args.input, 
-            str(args.verbosity)]
-    print(cmmd)
+    cmmd = [
+        exec_path,
+        str(args["N"]),
+        str(args["crop_factor"]),
+        str(args["final_win_size"]),
+        str(args["ol"]),
+        args["output"],
+        args["input"],
+        str(args["verbosity"]),
+        str(args["downsample_factor"]),
+    ]
     subprocess.run(cmmd, check=True)
 
-def get_args():
-    output_mat_structure = """
-This script will output the results of JuliaPIV as a .mat file with the following
-structure:
-    
-x: [255x299 double]
-y: [255x299 double]
-pass_sizes: [3x2 double]
-    overlap: 0.5
-    method: 'multin'
-        fn: {list of jpg files}
-            u: [255x299 double]
-            v: [255x299 double]
-        npts: [255x299 double]  # number of data points that weren't NaN prior to time-average
-        uStd: [255x299 double]  # standard deviation of the N results
-        vStd: [255x299 double]  # ditto
-"""
-
-    parser = argparse.ArgumentParser(prog='PIV Pipeline Utility',
-                                     description='Run Julia PIV on a batch of frames.',
-                                     epilog=output_mat_structure)
-    
-    parser.add_argument('-N', 
-                        help="The number of frames to average together at once.",
-                        type=int)
-                        # default=2)
-    
-    parser.add_argument('--crop_factor',
-                        help='Gives a box to extract from the raw image. Should be a tuple of 4 ints wrapped in quotes.')
-                        # default="24, 2425, 1, 2048")
-    
-    parser.add_argument('--final_win_size',
-                        help='Final window size to evaluate PIV at.',
-                        type=int)
-                        # default=16)
-    
-    parser.add_argument('--ol', 
-                        help='Window overlap for frame comparison.',
-                        type=float)
-                        # default=0.5)
-    
-    parser.add_argument('--output', '-o',
-                        help='Where to output .mat files')
-    
-    parser.add_argument('--input', '-i',
-                        help='Dir of .txt files containing image paths.')
-    
-    parser.add_argument('--verbosity', '-v',
-                        help='1 for verbose print statements, 0 otherwise.',
-                        type=int)
-                        # default=0)
-    parser.add_argument('--config', '-c', 
-                        help='Load args from a config file')
-    
-    args = parser.parse_args()
-
+def load_config(config_path, cli_args):
+    """
+    Load the configuration YAML file for this PIV run. 
+    """
     # Load the config file. Overrideable if desired!
-    if args.config:
-        with open(args.config, 'r') as f:
-            try:
-                config = yaml.safe_load(f)
-            except yaml.YAMLError as e:
-                raise e
-        # Goes through the config file and checks if arg is already supplied via CL
-        for key in config:
-            if getattr(args, key) is None:
-                attr = config[key]
-                setattr(args, key, attr)
+    with open(config_path, 'r') as f:
+        try:
+            config = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise e
+    # Goes through the config file and checks if arg is already supplied via CL
+    for key, value in config.items():
+        if cli_args.get(key) is None:
+            cli_args[key] = value
     
-    return args
+    return cli_args
 
-def main():
-    args = get_args()
-    txt_list = batches(args.input)
+@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+@click.option('-N', type=int, help="Number of frames to average together.")
+@click.option('--crop_factor', '-r', help="Crop box as a quoted string of 4 ints.")
+@click.option('--final_win_size', '-w', type=int, help="Final window size.")
+@click.option('--ol', type=float, help="Window overlap.")
+@click.option('--output', '-o', help="Output directory for .mat files.")
+@click.option('--input', '-i', help="Directory of .txt files.")
+@click.option('--verbosity', '-v', type=int, help="Verbosity level (0 or 1).")
+@click.option('--config', '-c', type=click.Path(exists=True), help="YAML config file to load defaults.")
+@click.option('-d', '--downsample_factor', type=int, help="Image downsampling factor.")
+def main(**kwargs):
+    logging.info("Running PIV")
+    if kwargs.get("config"):
+        kwargs = load_config(kwargs["config"], kwargs)
+
+    txt_list = batches(kwargs["input"])
     logging.info(f"Found {len(txt_list)} .txt files\n")
 
     try:
@@ -124,9 +86,9 @@ def main():
         if input("Proceed anyways? [y/n] ") != 'y':
             return
 
-    launch_batch(txt_list[0], args)
-    # with Pool(processes=NPROC) as pool:
-    #     pool.starmap(launch_batch, [(file, args) for file in txt_list])
+    # launch_batch(txt_list[0], args)
+    with Pool(processes=NPROC) as pool:
+        pool.starmap(launch_batch, [(file, kwargs) for file in txt_list])
 
 
 if __name__ == '__main__':
