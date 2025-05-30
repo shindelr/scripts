@@ -39,7 +39,7 @@ def run_pipe(args):
         str(args["ol"]),
         args["output"],
         args["input"],
-        str(args["verbosity"]),
+        str(args["quiet"]),
         str(args["downsample_factor"]),
     ]
     subprocess.run(cmmd, check=True)
@@ -68,13 +68,15 @@ def load_config(config_path, cli_args):
 @click.option('--ol', type=float, help="Window overlap.")
 @click.option('--output', '-o', help="Output directory for .mat files.")
 @click.option('--input', '-i', help="Directory of .txt files.")
-@click.option('--verbosity', '-v', type=int, help="Verbosity level (0 or 1).")
+@click.option('--quiet', '-q', is_flag=True, help="Quiet mode.")
 @click.option('--config', '-c', type=click.Path(exists=True), help="YAML config file to load defaults.")
 @click.option('-d', '--downsample_factor', type=int, help="Image downsampling factor.")
 def main(**kwargs):
     logging.info("Running PIV")
     if kwargs.get("config"):
         kwargs = load_config(kwargs["config"], kwargs)
+    if kwargs['quiet']:  # TODO: Flip the variable in PIVPipeline.jl from verbose to quiet and change 0s to 1s
+        kwargs['quiet'] = 0
 
     txt_list = batches(kwargs["input"])
     logging.info(f"Found {len(txt_list)} .txt files\n")
