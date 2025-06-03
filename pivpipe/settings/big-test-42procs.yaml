@@ -6,5 +6,6 @@ ol: 0.5
 # Absolute paths
 input: "/home/server/pi/homes/shindelr/2023-test/big-test-batches"
 output: "/home/server/pi/homes/shindelr/2023-test/piv-mat-out/big-test"
-quiet: true
+quiet: false
 downsample_factor: 1.0
+NPROC: 42

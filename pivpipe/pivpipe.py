@@ -13,7 +13,6 @@ from copy import deepcopy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s -- %(levelname)s -- %(message)s")
 # NPROC = 61  # Num cores - 1 in Monarch?
-NPROC = 42  # Num batches in big-test-batches
 
 def launch_batch(file, args):
     """
@@ -82,26 +81,31 @@ def load_config(config_path, cli_args):
 @click.option('--quiet', '-q', is_flag=True, help="Quiet mode.")
 @click.option('--config', '-c', type=click.Path(exists=True), help="YAML config file to load defaults.")
 @click.option('-d', '--downsample_factor', type=int, help="Image downsampling factor.")
+@click.option('-p', '--NPROC', type=int, help='Number of processes to use. Ideally should equal the number of batches if possible.')
 def main(**kwargs):
     logging.info("Running PIV")
     if kwargs.get("config"):
         kwargs = load_config(kwargs["config"], kwargs)
-    if kwargs['quiet']:  # TODO: Flip the variable in PIVPipeline.jl from verbose to quiet and change 0s to 1s
+    if kwargs['quiet']:  # TODO: Flip the variable in PIVPipeline.jl from verbose to quiet and change 0s to 1s. It's confusing this way.
         kwargs['quiet'] = 0
+    else:
+        kwargs['quiet'] = 1
 
     txt_list = batches(kwargs["input"])
     logging.info(f"Found {len(txt_list)} .txt files\n")
 
     try:
-        assert NPROC == len(txt_list)
+        assert kwargs['NPROC'] == len(txt_list)
     except:
-        print(f"NPROC ({NPROC}) should ideally equal the number batches ({len(txt_list)}) to be processed.")
+        print(f"NPROC ({kwargs['NPROC']}) should ideally equal the number batches ({len(txt_list)}) to be processed.")
         if input("Proceed anyways? [y/n] ") != 'y':
             return
 
     # launch_batch(txt_list[0], args)
-    with Pool(processes=NPROC) as pool:
+    with Pool(processes=kwargs['NPROC']) as pool:
         pool.starmap(launch_batch, [(file, kwargs) for file in txt_list])
+    
+    logging.info("\nJob Completed.")
 
 
 if __name__ == '__main__':
