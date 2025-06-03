@@ -16,6 +16,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s -- %(levelname)s -- 
 NPROC = 42  # Num batches in big-test-batches
 
 def launch_batch(file, args):
+    """
+    Make copies of arguments to avoid race conditions while multi-processing. 
+    Each proc gets its own output directory (like batch1 batch2... batchn), this
+    way the processes are not competing for I/O to the same region of memory.
+    """
     local_args = deepcopy(args)
     local_args["input"] = file  # Ensure procs each have their own in path
     local_args["output"] = os.path.join(os.path.abspath(local_args["output"]), os.path.basename(file))  # Ensure procs each have their own out dir
@@ -26,9 +31,15 @@ def launch_batch(file, args):
     run_pipe(args=local_args)
 
 def batches(abs_batch_dir):
+    """
+    Do path magic. TODO: This is a bad doc string!
+    """
     return [os.path.join(abs_batch_dir, f) for f in os.listdir(abs_batch_dir)]
 
 def run_pipe(args):
+    """
+    Run the julia binary for PIV. 
+    """
     # Will probably need to be altered in future versions?
     exec_path = '/home/server/pi/homes/shindelr/Nearshore-PIV/piv_build/bin/PIVPipelineUtility'
     cmmd = [
