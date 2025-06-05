@@ -51,6 +51,7 @@ def run_pipe(args):
         args["input"],
         str(args["quiet"]),
         str(args["downsample_factor"]),
+        str(args["save_images"])
     ]
     subprocess.run(cmmd, check=True)
 
@@ -82,11 +83,12 @@ def load_config(config_path, cli_args):
 @click.option('--config', '-c', type=click.Path(exists=True), help="YAML config file to load defaults.")
 @click.option('-d', '--downsample_factor', type=int, help="Image downsampling factor.")
 @click.option('-p', '--NPROC', type=int, help='Number of processes to use. Ideally should equal the number of batches if possible.')
+@click.option('-s', '--save_images', is_flag=True, help="Save cropped and downsampled images. Note that extra I/O slows execution.")
 def main(**kwargs):
     logging.info("Running PIV")
     if kwargs.get("config"):
         kwargs = load_config(kwargs["config"], kwargs)
-    if kwargs['quiet']:  # TODO: Flip the variable in PIVPipeline.jl from verbose to quiet and change 0s to 1s. It's confusing this way.
+    if kwargs['quiet']:
         kwargs['quiet'] = 0
     else:
         kwargs['quiet'] = 1
