@@ -5,7 +5,8 @@ final_win_size: 16
 ol: 0.5
 # Absolute paths
 input: "/home/server/pi/homes/shindelr/2023-test/custom-frame-verify-jpgs"
-output: "/home/server/pi/homes/shindelr/2023-test/piv-mat-out/custom-frame-verify/run9-n3-d1"
+output: "/home/server/pi/homes/shindelr/2023-test/piv-mat-out/custom-frame-verify/run11-n3-d1"
 quiet: false
 downsample_factor: 1.0
 NPROC: 4
+save_images: false

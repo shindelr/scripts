@@ -51,7 +51,7 @@ def run_pipe(args):
         args["input"],
         str(args["quiet"]),
         str(args["downsample_factor"]),
-        str(args["save_images"])
+        str(args["save_images"]).lower()
     ]
     subprocess.run(cmmd, check=True)
 
@@ -103,12 +103,21 @@ def main(**kwargs):
         if input("Proceed anyways? [y/n] ") != 'y':
             return
 
-    # launch_batch(txt_list[0], args)
     with Pool(processes=kwargs['NPROC']) as pool:
         pool.starmap(launch_batch, [(file, kwargs) for file in txt_list])
-    
-    logging.info("\nJob Completed.")
 
+    logging.info("Cleaning up file structure.")
+    out_dirs = os.listdir(kwargs["output"])
+    for dir in out_dirs:
+        files = os.listdir(os.path.join(kwargs["output"], dir))
+        files_src = [os.path.join(kwargs["output"], dir, f) for f in files]
+        files_dst = [os.path.join(kwargs["output"], f) for f in files]
+        for i in range(len(files_src)):
+            os.rename(files_src[i], files_dst[i])
+        os.rmdir(os.path.join(kwargs["output"], dir))
+
+    logging.info("Job Completed.")
+    logging.info("Check that files were moved out of their batch directories and into the singular output directory.")
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,6 @@
 # config.yaml
 N: 2
-crop_factor: "1, 3072, 1, 2048"  # 2023 .mat files are uncropped
+crop_factor: "1, 3072, 1, 2048"  # Uncropped
 final_win_size: 16
 ol: 0.5
 # Absolute paths
@@ -9,3 +9,4 @@ output: "/home/server/pi/homes/shindelr/2023-test/piv-mat-out/big-test"
 quiet: false
 downsample_factor: 1.0
 NPROC: 42
+save_images: false
