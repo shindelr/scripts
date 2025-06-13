@@ -106,18 +106,22 @@ def main(**kwargs):
     with Pool(processes=kwargs['NPROC']) as pool:
         pool.starmap(launch_batch, [(file, kwargs) for file in txt_list])
 
+    print("\n")
     logging.info("Cleaning up file structure.")
     out_dirs = os.listdir(kwargs["output"])
     for dir in out_dirs:
-        files = os.listdir(os.path.join(kwargs["output"], dir))
-        files_src = [os.path.join(kwargs["output"], dir, f) for f in files]
-        files_dst = [os.path.join(kwargs["output"], f) for f in files]
-        for i in range(len(files_src)):
-            os.rename(files_src[i], files_dst[i])
-        os.rmdir(os.path.join(kwargs["output"], dir))
+        try:
+            files = os.listdir(os.path.join(kwargs["output"], dir))
+            files_src = [os.path.join(kwargs["output"], dir, f) for f in files]
+            files_dst = [os.path.join(kwargs["output"], f) for f in files]
+            for i in range(len(files_src)):
+                os.rename(files_src[i], files_dst[i])
+            os.rmdir(os.path.join(kwargs["output"], dir))
+        except NotADirectoryError:
+            exception_path = os.path.join(kwargs["output"], dir)
+            logging.warning(f"Skipping existing non-directory file: {exception_path}")
 
     logging.info("Job Completed.")
-    logging.info("Check that files were moved out of their batch directories and into the singular output directory.")
 
 if __name__ == '__main__':
     main()
