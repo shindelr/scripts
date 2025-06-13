@@ -31,7 +31,7 @@ def launch_batch(file, args):
 
 def batches(abs_batch_dir):
     """
-    Do path magic. TODO: This is a bad doc string!
+    Ensure each image has an absolute file path.
     """
     return [os.path.join(abs_batch_dir, f) for f in os.listdir(abs_batch_dir)]
 
