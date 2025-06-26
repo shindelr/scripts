@@ -12,7 +12,6 @@ import click
 from copy import deepcopy
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s -- %(levelname)s -- %(message)s")
-# NPROC = 61  # Num cores - 1 in Monarch?
 
 def launch_batch(file, args):
     """
@@ -97,9 +96,9 @@ def main(**kwargs):
     logging.info(f"Found {len(txt_list)} .txt files\n")
 
     try:
-        assert kwargs['NPROC'] == len(txt_list)
+        assert kwargs['NPROC'] <= len(txt_list)
     except:
-        print(f"NPROC ({kwargs['NPROC']}) should ideally equal the number batches ({len(txt_list)}) to be processed.")
+        print(f"NPROC ({kwargs['NPROC']}) should ideally be less than or equalto the number batches ({len(txt_list)}) to be processed.")
         if input("Proceed anyways? [y/n] ") != 'y':
             return
 
