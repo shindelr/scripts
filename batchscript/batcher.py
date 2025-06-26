@@ -20,9 +20,9 @@ from tqdm import tqdm
               help='Desired number of files per .txt output file, use this OR -b not both')
 @click.option('-b', '--num-batches', type=int,
               help='Number of batches desired, use this OR -n not both')
-@click.option('-r3', '--roxsi-2023', type=bool, default=False,
-              help='Toggle on to accurately sort jpgs from ROXSI 2023')
-def cli(indir, n_files_per, out_dir, num_batches, roxsi_2023):
+@click.option('-d', '--drone-sort', is_flag=True,
+              help='Toggle on to accurately sort jpgs from Drone Footage')
+def cli(indir, n_files_per, out_dir, num_batches, drone_sort):
     """
     A script to partition a directory of files into many directories with the OG
     files split between them. 
@@ -31,7 +31,7 @@ def cli(indir, n_files_per, out_dir, num_batches, roxsi_2023):
     abs_out = os.path.abspath(out_dir)
     out_dir_setup(abs_out)
 
-    if roxsi_2023:  # Check on file sort style
+    if drone_sort:  # Check on file sort style
         generate_txt_files(abs_in, abs_out, n_files_per, num_batches, int_sort=False)
     else:
         generate_txt_files(abs_in, abs_out, n_files_per, num_batches, int_sort=True)
@@ -58,7 +58,7 @@ def generate_txt_files(abs_in: str, abs_out: str,
 
     f-in-txt = f-total // n-files-per 
     """
-    key = int_sort_key if int_sort else roxsi_2023_sort_key
+    key = int_sort_key if int_sort else drone_sort_key
     sorted_files = sorted(os.listdir(abs_in), key=key)
     files = [os.path.join(abs_in, f) for f in sorted_files]   # Absolute after sort
     num_f = len(files)
@@ -89,7 +89,7 @@ def generate_txt_files(abs_in: str, abs_out: str,
     return
 
 
-def roxsi_2023_sort_key(f: str) -> int | float:
+def drone_sort_key(f: str) -> int | float:
     """
     A sorting key for jpgs from ROXSI 2023. 
     Those files use the convention:
