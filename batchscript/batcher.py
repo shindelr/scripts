@@ -8,6 +8,7 @@ OSU ROXSI SVS pipeline.
 """
 
 import os
+import sys
 import click
 import re
 from tqdm import tqdm
@@ -44,7 +45,11 @@ def out_dir_setup(abs_out: str) -> None:
     if not os.path.isdir(abs_out):
         print(f"Building a directory at {abs_out}")
         os.makedirs(abs_out)
-    return
+        return
+    if len(os.listdir(abs_out)) != 0:
+        print("WARNING: This directory is not empty, exiting.")
+        sys.exit()
+
 
 
 def generate_txt_files(abs_in: str, abs_out: str, 
