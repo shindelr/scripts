@@ -10,6 +10,7 @@ from multiprocessing import Pool
 import yaml
 import click
 from copy import deepcopy
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s -- %(levelname)s -- %(message)s")
 
@@ -23,6 +24,14 @@ def launch_batch(file, args):
     local_args["input"] = file  # Ensure procs each have their own in path
     local_args["output"] = os.path.join(os.path.abspath(local_args["output"]), os.path.basename(file))  # Ensure procs each have their own out dir
     local_args["output"] = local_args["output"].removesuffix(".txt")
+
+    # Ensure cleanliness and viability of each path in the input batch
+    with open(local_args["input"], 'r') as txt_file:
+        clean_lines = [line.strip() for line in txt_file]
+    # Verify that each is absolute still
+    abs_lines = [str(Path(line).resolve()) for line in clean_lines]
+    with open(local_args["input"], 'w') as txt_file:
+        txt_file.write('\n'.join(abs_lines) + '\n')
     
     if not os.path.isdir(local_args["output"]):
         os.mkdir(local_args["output"])
@@ -71,6 +80,26 @@ def load_config(config_path, cli_args):
     
     return cli_args
 
+def dir_cleanup(parent_out_dir, sub_out_dirs):
+    """
+    Clean output directory structure. Moves all resulting .mat files out from 
+    their process specific subdirectories (batch1, batch2 .. batchn) and into
+    the output folder.
+    """
+    print("\n")
+    for dir in sub_out_dirs:
+        try:
+            files = os.listdir(os.path.join(parent_out_dir, dir))
+            files_src = [os.path.join(parent_out_dir, dir, f) for f in files]
+            files_dst = [os.path.join(parent_out_dir, f) for f in files]
+            for i in range(len(files_src)):
+                os.rename(files_src[i], files_dst[i])
+            os.rmdir(os.path.join(parent_out_dir, dir))
+        except NotADirectoryError:
+            exception_path = os.path.join(parent_out_dir, dir)
+            logging.warning(f"Skipping existing non-directory file: {exception_path}")
+
+
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('-N', type=int, help="Number of frames to average together.")
 @click.option('--crop_factor', '-r', help="Crop box as a quoted string of 4 ints.")
@@ -105,21 +134,8 @@ def main(**kwargs):
     with Pool(processes=kwargs['NPROC']) as pool:
         pool.starmap(launch_batch, [(file, kwargs) for file in txt_list])
 
-    print("\n")
     logging.info("Cleaning up file structure.")
-    out_dirs = os.listdir(kwargs["output"])
-    for dir in out_dirs:
-        try:
-            files = os.listdir(os.path.join(kwargs["output"], dir))
-            files_src = [os.path.join(kwargs["output"], dir, f) for f in files]
-            files_dst = [os.path.join(kwargs["output"], f) for f in files]
-            for i in range(len(files_src)):
-                os.rename(files_src[i], files_dst[i])
-            os.rmdir(os.path.join(kwargs["output"], dir))
-        except NotADirectoryError:
-            exception_path = os.path.join(kwargs["output"], dir)
-            logging.warning(f"Skipping existing non-directory file: {exception_path}")
-
+    dir_cleanup(kwargs["output"] ,os.listdir(kwargs["output"]))
     logging.info("Job Completed.")
 
 if __name__ == '__main__':
